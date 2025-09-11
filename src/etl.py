@@ -22,7 +22,7 @@ logging.basicConfig(
 )
 
 # ---------------------- Config (from env or defaults) ----------------------
-SAP_BASE_URL   = os.getenv("SAP_BASE_URL", "https://my438923.businessbydesign.cloud.sap").rstrip("/")
+SAP_BASE_URL = "https://my438923.businessbydesign.cloud.sap"
 SAP_ODATA_PATH = os.getenv("SAP_ODATA_PATH", "/sap/byd/odata/ana_businessanalytics_analytics.svc").strip("/")
 SAP_QUERY      = os.getenv("SAP_QUERY", "RPZDA829C3EFFC649C58434CCQueryResults").strip("/")
 OUTPUT_CSV     = os.getenv("OUTPUT_CSV", "data/sap_analytics_export.csv")
