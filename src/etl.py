@@ -2,7 +2,7 @@ import os
 import sys
 import time
 import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 
 import requests
 import pandas as pd
@@ -21,8 +21,13 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 
-# ---------------------- Config (from env or defaults) ----------------------
+# ---------------------- Config ----------------------
+# TEMPORARY: hardcode base URL to avoid secret formatting issue
 SAP_BASE_URL = "https://my438923.businessbydesign.cloud.sap"
+
+# If/when secrets are good, replace the line above with:
+# SAP_BASE_URL   = os.getenv("SAP_BASE_URL", "https://my438923.businessbydesign.cloud.sap").rstrip("/")
+
 SAP_ODATA_PATH = os.getenv("SAP_ODATA_PATH", "/sap/byd/odata/ana_businessanalytics_analytics.svc").strip("/")
 SAP_QUERY      = os.getenv("SAP_QUERY", "RPZDA829C3EFFC649C58434CCQueryResults").strip("/")
 OUTPUT_CSV     = os.getenv("OUTPUT_CSV", "data/sap_analytics_export.csv")
@@ -129,6 +134,12 @@ def fetch_rows_for_access_code(code: str, top_per_page: int = 5000) -> List[Dict
     logging.info("  %s -> %d rows", code, len(all_rows))
     return all_rows
 
+def _stringify_unhashables(x: Any) -> Any:
+    """Convert dict/list (and other unhashables) to string for deduping."""
+    if isinstance(x, (dict, list, set)):
+        return str(x)
+    return x
+
 def run_etl() -> pd.DataFrame:
     codes = fetch_distinct_access_codes()
     all_records: List[Dict] = []
@@ -151,7 +162,13 @@ def run_etl() -> pd.DataFrame:
     ordered = [RENAME_MAP.get(c, c) for c in SELECT_FIELDS]
     first = [c for c in ordered if c in df.columns]
     rest = [c for c in df.columns if c not in first]
-    df = df[first + rest].drop_duplicates()
+    df = df[first + rest]
+
+    # Normalize unhashable values before deduping
+    df = df.applymap(_stringify_unhashables)
+
+    # Now it's safe to drop duplicates
+    df = df.drop_duplicates()
 
     return df
 
