@@ -104,10 +104,14 @@ def fetch_rows_for_access_code(code: str, top_per_page: int = 5000) -> List[Dict
     """Fetch all rows for a code, following server-driven paging via __next/skiptoken."""
     base_url = _entity_url(SAP_QUERY)
     select = ",".join(SELECT_FIELDS)
+
+    # Escape single quotes *before* using in the f-string
+    filter_value = code.replace("'", "''")
+
     params = {
         "$select": select,
         "$top": str(top_per_page),
-        "$filter": f"C0CHAR_STRUCTURE eq '{code.replace(\"'\", \"''\")}'",
+        "$filter": f"C0CHAR_STRUCTURE eq '{filter_value}'",
     }
 
     all_rows: List[Dict] = []
@@ -118,7 +122,8 @@ def fetch_rows_for_access_code(code: str, top_per_page: int = 5000) -> List[Dict
         all_rows.extend(rows)
         if not next_link:
             break
-        url, params = next_link, {}  # follow absolute next link as-is
+        # __next is a full URL with skiptoken; follow it as-is
+        url, params = next_link, {}
         time.sleep(REQUEST_PAUSE)
 
     logging.info("  %s -> %d rows", code, len(all_rows))
@@ -162,4 +167,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
