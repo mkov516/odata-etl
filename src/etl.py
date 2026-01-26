@@ -165,7 +165,7 @@ def run_etl() -> pd.DataFrame:
     df = df[first + rest]
 
     # Normalize unhashable values before deduping
-    df = df.applymap(_stringify_unhashables)
+    df = df.map(_stringify_unhashables)
 
     # Now it's safe to drop duplicates
     df = df.drop_duplicates()
